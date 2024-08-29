@@ -2,70 +2,68 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 #include "temp_api.h"
 #include "struct_api.h"
 
-#define LARGE 550000
-
-void test(void)
+int test(struct sensor *s, int *l, int *lmax)
 {
     printf("\nProgram testing mode started\n");
-
-    int l = 3;
     int data[3][6] = {{2021, 12, 13, 14, 15, 15}, {2023, 9, 19, 10, 10, -28}, {2022, 05, 14, 15, 16, 18}};
-    struct sensor s[3];
-    AddStruct(s, data, l);
+    AddStruct(s, data, 3, l, lmax);
     printf("\nStructure added:");
-    PrintStruct(s, l);
+    PrintStruct(s, *l);
 
     int nData[6] = {2020, 10, 9, 4, 23, 20};
-    AddElementStruct(s, nData, &l);
+    if (AddElementStruct(s, nData, l, lmax) == 0)
+        return 0;
     printf("The structure is complementary:");
-    PrintStruct(s, l);
+    PrintStruct(s, *l);
 
     printf("Structure sorted by time:");
-    SortStructTime(s, l);
-    PrintStruct(s, l);
+    SortStructTime(s, *l);
+    PrintStruct(s, *l);
 
     printf("Structure sorted by temperature:");
-    SortStructTemperature(s, l);
-    PrintStruct(s, l);
+    SortStructTemperature(s, *l);
+    PrintStruct(s, *l);
 
     printf("Structure element 2 deleted:");
-    DeleteElementStruct(s, 2, &l);
-    PrintStruct(s, l);
+    DeleteElementStruct(s, 2, l);
+    PrintStruct(s, *l);
 
     printf("\nStatistics for: 2020.10\n");
-    PrintMinTForMounth(s, l, 2020, 10);
-    PrintAverageTForMounth(s, l, 2020, 10);
-    PrintMaxTForMounth(s, l, 2020, 10);
+    PrintMinTForMounth(s, *l, 2020, 10);
+    PrintAverageTForMounth(s, *l, 2020, 10);
+    PrintMaxTForMounth(s, *l, 2020, 10);
 
     printf("\nStatistics for: 2022\n");
-    PrintMinTForYear(s, l, 2022);
-    PrintAverageTForYear(s, l, 2022);
-    PrintMaxTForYear(s, l, 2022);
+    PrintMinTForYear(s, *l, 2022);
+    PrintAverageTForYear(s, *l, 2022);
+    PrintMaxTForYear(s, *l, 2022);
 
     printf("\nStatistics for: 2025\n");
-    PrintMinTForYear(s, l, 2025);
-    PrintAverageTForYear(s, l, 2025);
-    PrintMaxTForYear(s, l, 2025);
+    PrintMinTForYear(s, *l, 2025);
+    PrintAverageTForYear(s, *l, 2025);
+    PrintMaxTForYear(s, *l, 2025);
 
     printf("\nStatistics for: 2025.10\n");
-    PrintMinTForMounth(s, l, 2025, 10);
-    PrintAverageTForMounth(s, l, 2025, 10);
-    PrintMaxTForMounth(s, l, 2025, 10);
+    PrintMinTForMounth(s, *l, 2025, 10);
+    PrintAverageTForMounth(s, *l, 2025, 10);
+    PrintMaxTForMounth(s, *l, 2025, 10);
 
     printf("\nProgram testing mode completed successfully\n\n");
+    return 1;
 }
 
-void FilePars(char *FileName, struct sensor s[], int *l)
+int FilePars(char *FileName, struct sensor *s, int *l, int *lmax)
 {
     FILE *f;
     printf("file: %s reading\n", FileName);
     if ((f = fopen(FileName, "r")) == 0)
     {
         printf("File name error");
-        return;
+        return 0;
     }
     else
     {
@@ -83,7 +81,8 @@ void FilePars(char *FileName, struct sensor s[], int *l)
                      minute >= 0 && minute <= 60 && t >= -99 && t <= 99)
             {
                 int data[] = {year, month, day, hour, minute, t};
-                AddElementStruct(s, data, l);
+                if (AddElementStruct(s, data, l, lmax) == 0)
+                    return 0;
             }
             else
             {
@@ -93,6 +92,7 @@ void FilePars(char *FileName, struct sensor s[], int *l)
     }
     printf("Reading completed");
     fclose(f);
+    return 1;
 }
 
 int CharToInt(char *FileName)
@@ -110,48 +110,86 @@ int CharToInt(char *FileName)
 
 int main(int argc, char *argv[])
 {
-    printf("argc = %d\n", argc);
-    int rez = 0, l = 0, ij = 0;
-    char StatYear, StatMounth;
-    struct sensor s[LARGE];
-    char StdFileName[] = "./temperature_data_examples/temperature_small.csv";
-    while ((rez = getopt(argc, argv, "thsf:m:")) != -1)
+    int rez = 0, l = 0, ij = 0, lmax = 100000;
+    int StatYear, StatMounth;
+    struct sensor *s;
+    if ((s = malloc(sizeof(struct sensor) * lmax)) == NULL)
     {
-        printf("ij = %d, rez = %d\n", ++ij, rez);
+        printf("Failed to allocate memory\n");
+        return 0;
+    }
+    char StdFileNameSmall[] = "./temperature_data_examples/temperature_small.csv";
+    char StdFileNameBig[] = "./temperature_data_examples/temperature_big.csv";
+    while ((rez = getopt(argc, argv, "thsbf:m::")) != -1)
+    {
         switch (rez)
         {
         case 't':
-            test();
+            if (test(s, &l, &lmax) == 0)
+                return 0;
             break;
         case 'h':
             printf("_____HELP_____\n\n");
             printf("-t Testing all program functionality.\n");
-            printf("-s Reading a standard file: temperature_small.csv.\n");
+            printf("-s Reading a standard CSV file: temperature_small.csv.\n");
+            printf("-b Reading a standard CSV file: temperature_big.csv.\n");
             printf("-f Input CSV file for processing.\n");
             printf("-m - Statistics for the entered month, format: MMYYYY.\n");
             printf("If the field is empty, display statistics for all months of all years.\n");
             break;
 
         case 's':
-            FilePars(StdFileName, s, &l);
+            if (FilePars(StdFileNameSmall, s, &l, &lmax) == 0)
+                return 0;
+            if (l != 0)
+                PrintStruct(s, l);
+            break;
+
+        case 'b':
+            if (FilePars(StdFileNameBig, s, &l, &lmax) == 0)
+                return 0;
             if (l != 0)
                 PrintStruct(s, l);
             break;
 
         case 'f':
-            FilePars(optarg, s, &l);
+            if (FilePars(optarg, s, &l, &lmax) == 0)
+                return 0;
             if (l != 0)
                 PrintStruct(s, l);
             break;
 
         case 'm':
-            printf("argument m = %s\n", optarg);
-            int chislo = CharToInt(optarg);
-            printf("argument m = %d\n", chislo);
-            if (chislo == 0)
-                printf("Statistika za vse vremia");
+            if (optarg == NULL)
+            {
+                //printf("lmax = %d, l = %d\n", lmax, l);
+                SortStructTime(s, l);
+                int MonthMax = 0, YearMax = (s + l - 1)->year, MonthMin = (s)->month, YearMin = (s)->year;
+                //printf("MonthMin = %d, YearMin = %d, MonthMax = %d, YearMax = %d\n", MonthMin, YearMin, MonthMax, YearMax);
+                for (int i = YearMin; i <= YearMax; i++)
+                {
+                    if (i == YearMax)
+                        MonthMax = (s + l - 1)->month;
+                    for (int j = MonthMin; j <= MonthMax; j++)
+                    {
+                        printf("\nStatistics for: %d.%d\n", i, j);
+                        PrintMinTForMounth(s, l, i, j);
+                        PrintAverageTForMounth(s, l, i, j);
+                        PrintMaxTForMounth(s, l, i, j);
+                    }
+
+                    printf("\nStatistics for: %d\n", i);
+                    PrintMinTForYear(s, l, i);
+                    PrintAverageTForYear(s, l, i);
+                    PrintMaxTForYear(s, l, i);
+
+                    if (i == YearMin)
+                        MonthMin = 0;
+                }
+            }
             else
             {
+                int chislo = CharToInt(optarg);
                 StatMounth = chislo / 10000;
                 StatYear = chislo % 10000;
                 printf("\nStatistics for: %d.%d\n", StatMounth, StatYear);
@@ -161,12 +199,9 @@ int main(int argc, char *argv[])
             }
             break;
 
-            char StatDay, StatMounth;
-
         default:
             printf("error, -h for help\n");
             break;
         }
-        return 0;
     }
 }

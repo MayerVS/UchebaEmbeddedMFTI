@@ -12,9 +12,9 @@ struct sensor
     int8_t t;
 };
 
-void AddElementStruct(struct sensor [], int[], int*);
-void DeleteElementStruct(struct sensor [], int, int*);
-void AddStruct(struct sensor [], int[][6], int);
-void SortStructTemperature(struct sensor [], int);
-void SortStructTime(struct sensor [], int);
-void PrintStruct(struct sensor [], int);
+int AddElementStruct(struct sensor *, int[], int *, int *);
+void DeleteElementStruct(struct sensor *, int, int *);
+void AddStruct(struct sensor *, int[][6], int, int*, int *);
+void SortStructTemperature(struct sensor *, int);
+void SortStructTime(struct sensor *, int);
+void PrintStruct(struct sensor *, int);

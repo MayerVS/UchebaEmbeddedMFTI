@@ -13,4 +13,4 @@ struct_api.o: struct_api.c struct_api.h
 	gcc -c -o struct_api.o struct_api.c
 
 clean: 
-	rm -rf *.o prog
+	rm -rf *.o prog 
