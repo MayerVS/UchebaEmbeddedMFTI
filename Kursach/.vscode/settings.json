@@ -1,8 +1,0 @@
-{
-    "C_Cpp.errorSquiggles": "disabled",
-    "files.associations": {
-        "temp_api.h": "c",
-        "stdio.h": "c",
-        "stdint.h": "c"
-    }
-}
