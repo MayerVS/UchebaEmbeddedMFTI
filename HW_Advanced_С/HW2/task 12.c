@@ -1,8 +1,7 @@
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 typedef struct list {
     void *address;
@@ -61,7 +60,7 @@ void printList(list *head) {
 void* my_malloc(size_t size, const char *file, int line, const char *func){
     void *ptr = malloc(size);
     char coment[64] = {0};
-    sprintf (coment,"Allocated = %s, %i, %s, %p[%li]", file, line, func, ptr, size);    
+    sprintf (coment,"Allocated = %s, %i, %s, %p[%lli]", file, line, func, ptr, size);    
     insert(&memlist,ptr,size,coment);
     
     return ptr;
@@ -100,7 +99,7 @@ uint64_t findMaxBlock(list *head)
 		if( maxSize < (nextList->size))
 		{
 			maxSize = (nextList->size);
-			maxMemAdress = (nextList->address);
+			maxMemAdress = (uint64_t)(nextList->address);
 		}
 		nextList = (nextList->next);
 	}
